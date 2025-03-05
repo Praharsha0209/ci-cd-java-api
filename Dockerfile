@@ -5,7 +5,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 # 3️⃣ Copy the built JAR file from target folder into the container
-COPY target/ci-cd-java-api-0.0.1-SNAPSHOT.jar app.jar
+COPY target/*.jar app.jar
 
 # 4️⃣ Expose port 8080 so the application can be accessed
 EXPOSE 8080
