@@ -1,9 +1,10 @@
+---
 name: CI/CD Pipeline
 
 on:
   push:
     branches:
-      - main
+      - "main"   # yamllint disable-line rule:truthy
 
 jobs:
   build:
@@ -21,7 +22,9 @@ jobs:
       - name: Build with Maven
         run: mvn clean package
 
-      - name: Build Docker Image
-        run: docker build -t praharsha0209/ci-cd-java-api .
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t praharsha0209/ci-cd-java-api .
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker push your-dockerhub-username/ci-cd-java-api
+          docker push praharsha0209/ci-cd-java-api
+      
