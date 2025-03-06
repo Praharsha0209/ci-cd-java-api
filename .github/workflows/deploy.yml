@@ -1,0 +1,39 @@
+---
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+      - main  # Runs only when code is pushed to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 🔹 Step 1: Checkout Code from GitHub
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 🔹 Step 2: Log in to Amazon Elastic Container Registry (ECR)
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # 🔹 Step 3: Build and Push Docker Image to ECR
+      - name: Build and Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ secrets.AWS_ECR_REGISTRY }}
+          ECR_REPOSITORY: ci-cd-java-api
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # 🔹 Step 4: Deploy to Amazon ECS
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ecs-task-def.json
+          cluster: ci-cd-cluster
+          service: ci-cd-java-api-service
+          wait-for-service-stability: true
