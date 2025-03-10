@@ -1,10 +1,9 @@
----
 name: CI/CD Pipeline
 
 on:
   push:
     branches:
-      - "main"   # yamllint disable-line rule:truthy
+      - main
 
 jobs:
   build:
@@ -22,19 +21,23 @@ jobs:
       - name: Build with Maven
         run: mvn clean package
 
-      - name: Log in to Docker Hub
+      - name: Build and Push Docker Image
         env:
           DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASS: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          echo "$DOCKER_PASS" | \
-          docker login \
-          --username "$DOCKER_USER" \
-          --password-stdin
+          echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+          docker build -t $DOCKER_USER/ci-cd-java-api .
+          docker push $DOCKER_USER/ci-cd-java-api
 
-      - name: Build and Push Docker Image
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy to EKS
         run: |
-          docker build -t praharsha0209/ci-cd-java-api .
-          echo "${{ secrets.DOCKER_PASSWORD }}" |
-          docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker push praharsha0209/ci-cd-java-api
+          aws eks --region us-east-1 update-kubeconfig --name ci-cd-java-api-cluster
+          kubectl apply -f k8s-deployment.yaml
